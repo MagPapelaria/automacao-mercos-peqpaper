@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Automação Mercos - Planilha peqpaper</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .upload-section {
+            border: 2px dashed #ddd;
+            padding: 30px;
+            text-align: center;
+            margin: 20px 0;
+            border-radius: 10px;
+            background-color: #fafafa;
+        }
+        .upload-section:hover {
+            border-color: #007bff;
+            background-color: #f0f8ff;
+        }
+        input[type="file"] {
+            margin: 10px 0;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            width: 100%;
+            max-width: 400px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            display: none;
+        }
+        .success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .info {
+            background-color: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+        .loading {
+            text-align: center;
+            color: #007bff;
+            font-weight: bold;
+        }
+        .instructions {
+            background-color: #e7f3ff;
+            padding: 20px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .instructions h3 {
+            margin-top: 0;
+            color: #0066cc;
+        }
+        .instructions ol {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        .instructions li {
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Automação Mercos - Planilha peqpaper</h1>
+        
+        <div class="instructions">
+            <h3>📋 Como usar:</h3>
+            <ol>
+                <li>Faça upload da <strong>planilha de orçamento</strong> exportada do Mercos</li>
+                <li>Clique em <strong>"Gerar Planilha peqpaper"</strong></li>
+                <li>Aguarde o processamento</li>
+                <li>Baixe automaticamente a <strong>Planilha peqpaper preenchida</strong></li>
+            </ol>
+            <p><strong>✅ Resultado:</strong> Planilha peqpaper com códigos Ommie, quantidades, preços e CNPJ preenchidos automaticamente!</p>
+        </div>
+
+        <div class="upload-section">
+            <h3>📁 Upload da Planilha de Orçamento</h3>
+            <input type="file" id="orcamentoFile" accept=".xlsx,.xls" />
+            <br>
+            <button onclick="gerarPlanilhaPeqpaper()" id="processBtn">
+                🔄 Gerar Planilha peqpaper
+            </button>
+        </div>
+
+        <div id="result" class="result"></div>
+    </div>
+
+    <script>
+        function gerarPlanilhaPeqpaper() {
+            const orcamentoFile = document.getElementById('orcamentoFile').files[0];
+            const resultDiv = document.getElementById('result');
+            const processBtn = document.getElementById('processBtn');
+            
+            if (!orcamentoFile) {
+                showResult('error', 'Por favor, selecione a planilha de orçamento do Mercos.');
+                return;
+            }
+            
+            // Mostrar loading
+            processBtn.disabled = true;
+            processBtn.textContent = '⏳ Processando...';
+            showResult('info loading', 'Processando arquivo... Por favor, aguarde.');
+            
+            const formData = new FormData();
+            formData.append('orcamento', orcamentoFile);
+            
+            fetch('/api/automatizar-planilha-peqpaper', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                if (response.ok) {
+                    // Extrair informações do cabeçalho
+                    const processingInfo = response.headers.get('X-Processing-Info');
+                    
+                    // Fazer download do arquivo
+                    return response.blob().then(blob => {
+                        const url = window.URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.style.display = 'none';
+                        a.href = url;
+                        a.download = 'planilha_peqpaper_preenchida.xlsx';
+                        document.body.appendChild(a);
+                        a.click();
+                        window.URL.revokeObjectURL(url);
+                        
+                        // Mostrar resultado de sucesso
+                        let message = '✅ Planilha peqpaper gerada com sucesso!<br>📥 Download iniciado automaticamente.';
+                        
+                        if (processingInfo) {
+                            try {
+                                const info = JSON.parse(processingInfo.replace(/'/g, '"'));
+                                message += `<br><br><strong>📊 Resumo do processamento:</strong><br>`;
+                                message += `• Total de produtos no orçamento: ${info.total_produtos_orcamento}<br>`;
+                                message += `• Produtos encontrados na base: ${info.produtos_encontrados}<br>`;
+                                message += `• Taxa de sucesso: ${info.taxa_sucesso}<br>`;
+                                if (info.produtos_nao_encontrados > 0) {
+                                    message += `• Produtos não encontrados: ${info.produtos_nao_encontrados}`;
+                                }
+                            } catch (e) {
+                                console.log('Erro ao processar informações:', e);
+                            }
+                        }
+                        
+                        showResult('success', message);
+                    });
+                } else {
+                    return response.json().then(data => {
+                        throw new Error(data.error || 'Erro desconhecido');
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Erro:', error);
+                showResult('error', `❌ Erro ao processar arquivo: ${error.message}`);
+            })
+            .finally(() => {
+                processBtn.disabled = false;
+                processBtn.textContent = '🔄 Gerar Planilha peqpaper';
+            });
+        }
+        
+        function showResult(type, message) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.className = `result ${type}`;
+            resultDiv.innerHTML = message;
+            resultDiv.style.display = 'block';
+        }
+        
+        // Permitir drag and drop
+        const uploadSection = document.querySelector('.upload-section');
+        const fileInput = document.getElementById('orcamentoFile');
+        
+        uploadSection.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadSection.style.borderColor = '#007bff';
+            uploadSection.style.backgroundColor = '#f0f8ff';
+        });
+        
+        uploadSection.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            uploadSection.style.borderColor = '#ddd';
+            uploadSection.style.backgroundColor = '#fafafa';
+        });
+        
+        uploadSection.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadSection.style.borderColor = '#ddd';
+            uploadSection.style.backgroundColor = '#fafafa';
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                fileInput.files = files;
+            }
+        });
+    </script>
+</body>
+</html>
+

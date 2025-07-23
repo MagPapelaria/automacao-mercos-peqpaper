@@ -1,0 +1,23 @@
+
+# Elastic Beanstalk Files
+.elasticbeanstalk/*
+!.elasticbeanstalk/*.cfg.yml
+!.elasticbeanstalk/*.global.yml
+venv/
+.venv/
+env/
+*.env
+.idea/  # Para usuários de PyCharm/IntelliJ
+__pycache__/
+*.pyc
+*.pyd
+*.pyo
+*.egg-info/
+.pytest_cache/
+*.log
+logs/
+*.db
+*.sqlite3
+resultado_automatizado.xlsx
+planilha_peqpaper_preenchida.xlsx
+planilha_16249_automatizada.xlsx
